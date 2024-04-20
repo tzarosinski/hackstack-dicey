@@ -1,0 +1,149 @@
+<!-- file: index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dicey Dungeons Inspired Game</title>
+    <style>
+        .dice, .ability-card, .enemy-health, .player-health, .trophy-log {
+            border: 1px solid black;
+            padding: 10px;
+            margin: 5px;
+            text-align: center;
+        }
+
+        .dice {
+            cursor: grab;
+            display: inline-block;
+        }
+
+        .ability-card {
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .enemy-health, .player-health {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="diceArea"></div>
+    <div id="abilityCards">
+        <div class="ability-card" data-requirement="odd" data-used="false">Oddslam: Requires an odd number, deal damage equal to the dice placed.</div>
+        <div class="ability-card" id="smashCard" data-countdown="10" data-used="false">Smash: Countdown 10. Place any dice to reduce countdown. When countdown reaches 0, deal 10 damage.</div>
+        <div class="ability-card" data-requirement="six" data-used="false">Lucky Six: Requires a 6, adds an additional dice to the pool for the next turn.</div>
+        <div class="ability-card" data-requirement="heal" data-used="false">Heal: Can only use dice that are 3 or less, heals the player. Once per turn.</div>
+        <div class="ability-card" data-requirement="megastrike" data-used="false">Megastrike: Can only use dice that are 4 or less, deals double the dice value in damage. Once per turn.</div>
+    </div>
+    <div id="enemy">Enemy: <span id="enemyIcon">👾</span></div>
+    <div id="enemyHealth">Enemy Health: <span id="enemyHp">10</span></div>
+    <div id="playerHealth">Player Health: <span id="playerHp">30</span></div>
+    <button id="endTurn">End Turn</button>
+    <div id="trophyLog" class="trophy-log">Trophy Log:</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const diceArea = document.getElementById('diceArea');
+            const enemyHpElement = document.getElementById('enemyHp');
+            const playerHpElement = document.getElementById('playerHp');
+            const smashCard = document.getElementById('smashCard');
+            let enemyHp = 10;
+            let playerHp = 30;
+            let diceCount = 3; // Initial dice count
+
+            function rollDice() {
+                diceArea.innerHTML = ''; // Clear previous dice
+                for (let i = 0; i < diceCount; i++) {
+                    const diceValue = Math.ceil(Math.random() * 6);
+                    const diceElement = document.createElement('div');
+                    diceElement.className = 'dice';
+                    diceElement.textContent = diceValue;
+                    diceElement.setAttribute('draggable', true);
+                    diceElement.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', diceValue);
+                        e.dataTransfer.setData('text/sourceId', e.target.id); // Track the source ID
+                    });
+                    diceElement.id = `dice-${i}`; // Unique ID for each dice
+                    diceArea.appendChild(diceElement);
+                }
+                // Reset ability card usage for the new turn
+                document.querySelectorAll('.ability-card').forEach(card => {
+                    card.dataset.used = "false";
+                });
+            }
+
+            document.querySelectorAll('.ability-card').forEach(card => {
+                card.addEventListener('dragover', (e) => e.preventDefault());
+                card.addEventListener('drop', (e) => {
+                    const diceValue = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                    const sourceId = e.dataTransfer.getData('text/sourceId');
+                    const cardRequirement = card.dataset.requirement;
+                    const cardUsed = card.dataset.used === "true";
+
+                    if (!cardUsed) {
+                        if (cardRequirement === 'heal' && diceValue <= 3) {
+                            playerHp += diceValue; // Heal the player
+                            card.dataset.used = "true";
+                        } else if (cardRequirement === 'megastrike' && diceValue <= 4) {
+                            enemyHp -= diceValue * 2; // Double damage
+                            card.dataset.used = "true";
+                        } else if (cardRequirement === 'odd' && diceValue % 2 !== 0) {
+                            enemyHp -= diceValue;
+                        } else if (cardRequirement === 'six' && diceValue === 6) {
+                            diceCount++; // Increase dice count for the next turn
+                        } else if (card.id === 'smashCard') {
+                            let countdown = parseInt(card.dataset.countdown, 10);
+                            countdown -= diceValue;
+                            if (countdown <= 0) {
+                                enemyHp -= 10; // Deal damage when countdown reaches 0
+                                countdown = 10; // Reset countdown
+                            }
+                            card.dataset.countdown = countdown; // Update countdown
+                            card.textContent = `Smash: Countdown ${countdown}. Place any dice to reduce countdown. When countdown reaches 0, deal 10 damage.`;
+                        }
+                        document.getElementById(sourceId)?.remove();
+                        enemyHpElement.textContent = enemyHp;
+                        playerHpElement.textContent = playerHp;
+                        checkEnemyHealth();
+                        checkPlayerHealth();
+                    }
+                });
+            });
+
+            document.getElementById('endTurn').addEventListener('click', () => {
+                const damage = Math.floor(Math.random() * 3) + 2; // Random damage between 2 and 4
+                playerHp -= damage;
+                playerHpElement.textContent = playerHp;
+                checkPlayerHealth();
+                rollDice(); // Automatically roll new dice for the player's next turn
+            });
+
+            function checkEnemyHealth() {
+                if (enemyHp <= 0) {
+                    alert('Enemy defeated!');
+                    addTrophy(document.getElementById('enemyIcon').textContent);
+                    enemyHp = 10; // Reset enemy health
+                    enemyHpElement.textContent = enemyHp;
+                    rollDice(); // Roll dice for the new turn
+                }
+            }
+
+            function addTrophy(icon) {
+                const trophy = document.createElement('span');
+                trophy.textContent = icon + " ";
+                document.getElementById('trophyLog').appendChild(trophy);
+            }
+
+            function checkPlayerHealth() {
+                if (playerHp <= 0) {
+                    alert('Game Over!');
+                    document.getElementById('endTurn').style.display = 'none'; // Prevent further actions
+                }
+            }
+
+            rollDice(); // Initial dice roll at the start of the game
+        });
+    </script>
+</body>
+</html>
