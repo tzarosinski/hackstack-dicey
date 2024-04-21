@@ -15,11 +15,15 @@
         .dice {
             cursor: grab;
             display: inline-block;
+            width: 20px;
+            height: 20px;
+           
         }
 
         .ability-card {
             cursor: pointer;
             margin-bottom: 10px;
+            border-radius: 10px;
         }
 
         .enemy-health, .player-health {
@@ -35,6 +39,8 @@
         <div class="ability-card" data-requirement="six" data-used="false">Lucky Six: Requires a 6, adds an additional dice to the pool for the next turn.</div>
         <div class="ability-card" data-requirement="heal" data-used="false">Heal: Can only use dice that are 3 or less, heals the player. Once per turn.</div>
         <div class="ability-card" data-requirement="megastrike" data-used="false">Megastrike: Can only use dice that are 4 or less, deals double the dice value in damage. Once per turn.</div>
+        <div class="ability-card" data-requirement="sword" data-used="false">Sword: deal dice + 1 damage Once per turn.</div>
+        <div class="ability-card" data-requirement="throw" data-used="false">Throw dice: deal 1 damage</div>
     </div>
     <div id="enemy">Enemy: <span id="enemyIcon">👾</span></div>
     <div id="enemyHealth">Enemy Health: <span id="enemyHp">10</span></div>
@@ -92,6 +98,11 @@
                             enemyHp -= diceValue;
                         } else if (cardRequirement === 'six' && diceValue === 6) {
                             diceCount++; // Increase dice count for the next turn
+                        } else if (cardRequirement === 'sword') {
+                            enemyHp -= diceValue + 1;
+                            card.dataset.used = "true"
+                        } else if (cardRequirement === 'throw') {
+                            enemyHp -= 1;
                         } else if (card.id === 'smashCard') {
                             let countdown = parseInt(card.dataset.countdown, 10);
                             countdown -= diceValue;
